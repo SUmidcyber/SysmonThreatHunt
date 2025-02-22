@@ -1,0 +1,60 @@
+<Sysmon schemaversion="4.50">
+    <HashAlgorithms>SHA256</HashAlgorithms>
+    <EventFiltering>
+        
+        <!-- 1. Process Creation (Şüpheli süreçleri izle) -->
+        <RuleGroup name="Process Creation" groupRelation="or">
+            <ProcessCreate onmatch="include">
+                <Image condition="contains">powershell.exe</Image>
+                <CommandLine condition="contains">-EncodedCommand</CommandLine>
+                <Image condition="contains">cmd.exe</Image>
+                <Image condition="contains">wscript.exe</Image>
+                <Image condition="contains">cscript.exe</Image>
+            </ProcessCreate>
+        </RuleGroup>
+
+        <!-- 2. Network Connection (Şüpheli bağlantıları izle) -->
+        <RuleGroup name="Network Connections" groupRelation="or">
+            <NetworkConnect onmatch="include">
+                <Image condition="contains">powershell.exe</Image>
+                <Image condition="contains">cmd.exe</Image>
+                <Image condition="contains">nc.exe</Image>
+                <Image condition="contains">wget.exe</Image>
+                <Image condition="contains">curl.exe</Image>
+                <DestinationPort condition="is">3389</DestinationPort>  <!-- RDP bağlantıları -->
+                <DestinationPort condition="is">4444</DestinationPort>  <!-- Meterpreter bağlantıları -->
+            </NetworkConnect>
+        </RuleGroup>
+
+        <!-- 3. File Create (Kötü amaçlı dosya oluşturma işlemlerini izle) -->
+        <RuleGroup name="File Create" groupRelation="or">
+            <FileCreate onmatch="include">
+                <TargetFilename condition="contains">temp\mimikatz.exe</TargetFilename>
+                <TargetFilename condition="contains">C:\Users\Public\malware.exe</TargetFilename>
+                <TargetFilename condition="ends with">.bat</TargetFilename>
+                <TargetFilename condition="ends with">.vbs</TargetFilename>
+                <TargetFilename condition="ends with">.ps1</TargetFilename>
+            </FileCreate>
+        </RuleGroup>
+
+        <!-- 4. Registry Modification (Windows Defender ayarlarını değiştiren girişimleri izle) -->
+        <RuleGroup name="Registry Modification" groupRelation="or">
+            <RegistryEvent onmatch="include">
+                <TargetObject condition="contains">\SOFTWARE\Microsoft\Windows Defender\</TargetObject>
+                <Details condition="contains">DisableAntiSpyware</Details>
+                <Details condition="contains">DisableRealtimeMonitoring</Details>
+            </RegistryEvent>
+        </RuleGroup>
+
+        <!-- 5. Image Load (Şüpheli DLL yüklemelerini izle) -->
+        <RuleGroup name="Image Load" groupRelation="or">
+            <ImageLoad onmatch="include">
+                <Image condition="contains">lsass.exe</Image>
+                <ImageLoaded condition="contains">mimilib.dll</ImageLoaded>
+                <ImageLoaded condition="contains">wdigest.dll</ImageLoaded>
+                <ImageLoaded condition="contains">samlib.dll</ImageLoaded>
+            </ImageLoad>
+        </RuleGroup>
+
+    </EventFiltering>
+</Sysmon>
